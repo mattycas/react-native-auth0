@@ -32,7 +32,8 @@ const validateClaims = (payload, opts) => {
     );
   }
 
-  if (payload.iss !== 'https://' + opts.domain + '/') {
+  const issuer = opts.issuer || 'https://' + opts.domain + '/';
+  if (payload.iss !== issuer) {
     return Promise.reject(
       idTokenError({
         error: 'invalid_issuer_claim',
