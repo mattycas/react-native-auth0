@@ -25,12 +25,13 @@ const callbackUri = domain => {
  * @see https://auth0.com/docs/api-auth/grant/authorization-code-pkce
  */
 export default class WebAuth {
-  constructor(auth) {
+  constructor(auth, shareAuthSession = true) {
     this.client = auth;
     const {baseUrl, clientId, domain} = auth;
     this.domain = domain;
     this.clientId = clientId;
     this.agent = new Agent();
+    this.shareAuthSession = shareAuthSession;
   }
 
   /**
@@ -50,7 +51,6 @@ export default class WebAuth {
    * @param {Number} [parameters.max_age] The allowable elapsed time in seconds since the last time the user was authenticated (optional).
    * @param {Object} options options for ID token validation configuration.
    * @param {Number} [options.leeway] The amount of leeway, in seconds, to accommodate potential clock skew when validating an ID token's claims. Defaults to 60 seconds if not specified.
-   * @param {Boolean} [options.useAuthSession] Whether to use SFAuthenticationSession or ASWebAuthenticationSession or to force using plain SFSafariViewController (iOS only).
    * @returns {Promise}
    * @see https://auth0.com/docs/api/authentication#authorize-client
    *
@@ -70,10 +70,8 @@ export default class WebAuth {
         ...parameters,
       };
       const authorizeUrl = this.client.authorizeUrl(query);
-      const useAuthSession =
-        'useAuthSession' in options ? options.useAuthSession : true;
       return agent
-        .show(authorizeUrl, false, useAuthSession)
+        .show(authorizeUrl, false, this.shareAuthSession)
         .then(redirectUrl => {
           if (!redirectUrl || !redirectUrl.startsWith(redirectUri)) {
             throw new AuthError({
@@ -127,12 +125,12 @@ export default class WebAuth {
    *
    * @memberof WebAuth
    */
-  clearSession(options = {}, useAuthSession = true) {
+  clearSession(options = {}) {
     const {client, agent, domain, clientId} = this;
     options.clientId = clientId;
     options.returnTo = callbackUri(domain);
     options.federated = options.federated || false;
     const logoutUrl = client.logoutUrl(options);
-    return agent.show(logoutUrl, true, useAuthSession);
+    return agent.show(logoutUrl, true, this.shareAuthSession);
   }
 }
