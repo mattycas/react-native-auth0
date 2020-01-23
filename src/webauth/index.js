@@ -50,6 +50,7 @@ export default class WebAuth {
    * @param {Number} [parameters.max_age] The allowable elapsed time in seconds since the last time the user was authenticated (optional).
    * @param {Object} options options for ID token validation configuration.
    * @param {Number} [options.leeway] The amount of leeway, in seconds, to accommodate potential clock skew when validating an ID token's claims. Defaults to 60 seconds if not specified.
+   * @param {Boolean} [options.useAuthSession] Whether to use SFAuthenticationSession or ASWebAuthenticationSession or to force using plain SFSafariViewController (iOS only).
    * @returns {Promise}
    * @see https://auth0.com/docs/api/authentication#authorize-client
    *
@@ -69,44 +70,48 @@ export default class WebAuth {
         ...parameters,
       };
       const authorizeUrl = this.client.authorizeUrl(query);
-      return agent.show(authorizeUrl).then(redirectUrl => {
-        if (!redirectUrl || !redirectUrl.startsWith(redirectUri)) {
-          throw new AuthError({
-            json: {
-              error: 'a0.redirect_uri.not_expected',
-              error_description: `Expected ${redirectUri} but got ${redirectUrl}`,
-            },
-            status: 0,
-          });
-        }
-        const query = url.parse(redirectUrl, true).query;
-        const {code, state: resultState, error} = query;
-        if (error) {
-          throw new AuthError({json: query, status: 0});
-        }
-        if (resultState !== expectedState) {
-          throw new AuthError({
-            json: {
-              error: 'a0.state.invalid',
-              error_description: `Invalid state received in redirect url`,
-            },
-            status: 0,
-          });
-        }
+      const useAuthSession =
+        'useAuthSession' in options ? options.useAuthSession : true;
+      return agent
+        .show(authorizeUrl, false, useAuthSession)
+        .then(redirectUrl => {
+          if (!redirectUrl || !redirectUrl.startsWith(redirectUri)) {
+            throw new AuthError({
+              json: {
+                error: 'a0.redirect_uri.not_expected',
+                error_description: `Expected ${redirectUri} but got ${redirectUrl}`,
+              },
+              status: 0,
+            });
+          }
+          const query = url.parse(redirectUrl, true).query;
+          const {code, state: resultState, error} = query;
+          if (error) {
+            throw new AuthError({json: query, status: 0});
+          }
+          if (resultState !== expectedState) {
+            throw new AuthError({
+              json: {
+                error: 'a0.state.invalid',
+                error_description: `Invalid state received in redirect url`,
+              },
+              status: 0,
+            });
+          }
 
-        return client
-          .exchange({code, verifier, redirectUri})
-          .then(credentials => {
-            return verifyToken(credentials.idToken, {
-              domain,
-              clientId,
-              nonce: parameters.nonce,
-              maxAge: parameters.max_age,
-              scope: parameters.scope,
-              leeway: options.leeway,
-            }).then(() => Promise.resolve(credentials));
-          });
-      });
+          return client
+            .exchange({code, verifier, redirectUri})
+            .then(credentials => {
+              return verifyToken(credentials.idToken, {
+                domain,
+                clientId,
+                nonce: parameters.nonce,
+                maxAge: parameters.max_age,
+                scope: parameters.scope,
+                leeway: options.leeway,
+              }).then(() => Promise.resolve(credentials));
+            });
+        });
     });
   }
 

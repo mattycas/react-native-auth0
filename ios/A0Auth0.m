@@ -43,8 +43,8 @@ RCT_EXPORT_METHOD(hide) {
     [self terminateWithError:nil dismissing:YES animated:YES];
 }
 
-RCT_EXPORT_METHOD(showUrl:(NSString *)urlString closeOnLoad:(BOOL)closeOnLoad callback:(RCTResponseSenderBlock)callback) {
-    if (@available(iOS 11.0, *)) {
+RCT_EXPORT_METHOD(showUrl:(NSString *)urlString closeOnLoad:(BOOL)closeOnLoad useAuthSession:(BOOL)useAuthSession callback:(RCTResponseSenderBlock)callback) {
+    if (@available(iOS 11.0, *) && useAuthSession) {
         self.sessionCallback = callback;
         self.closeOnLoad = closeOnLoad;
         [self presentAuthenticationSession:[NSURL URLWithString:urlString]];

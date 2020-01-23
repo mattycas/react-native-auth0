@@ -1,12 +1,12 @@
-import { NativeModules, Linking } from 'react-native';
+import {NativeModules, Linking, Platform} from 'react-native';
 
 export default class Agent {
-  show(url, closeOnLoad = false) {
+  show(url, closeOnLoad = false, useAuthSession = true) {
     if (!NativeModules.A0Auth0) {
       return Promise.reject(
         new Error(
-          'Missing NativeModule. React Native versions 0.60 and up perform auto-linking. Please see https://github.com/react-native-community/cli/blob/master/docs/autolinking.md.'
-        )
+          'Missing NativeModule. React Native versions 0.60 and up perform auto-linking. Please see https://github.com/react-native-community/cli/blob/master/docs/autolinking.md.',
+        ),
       );
     }
 
@@ -17,16 +17,24 @@ export default class Agent {
         resolve(event.url);
       };
       Linking.addEventListener('url', urlHandler);
-      NativeModules.A0Auth0.showUrl(url, closeOnLoad, (error, redirectURL) => {
+      const showCallback = (error, redirectURL) => {
         Linking.removeEventListener('url', urlHandler);
         if (error) {
           reject(error);
-        } else if(redirectURL) {
+        } else if (redirectURL) {
           resolve(redirectURL);
-        } else if(closeOnLoad) {
+        } else if (closeOnLoad) {
           resolve();
         }
-      });
+      };
+      Platform.OS === 'ios'
+        ? NativeModules.A0Auth0.showUrl(
+            url,
+            closeOnLoad,
+            useAuthSession,
+            showCallback,
+          )
+        : NativeModules.A0Auth0.showUrl(url, closeOnLoad, showCallback);
     });
   }
 
@@ -34,8 +42,8 @@ export default class Agent {
     if (!NativeModules.A0Auth0) {
       return Promise.reject(
         new Error(
-          'Missing NativeModule. React Native versions 0.60 and up perform auto-linking. Please see https://github.com/react-native-community/cli/blob/master/docs/autolinking.md.'
-        )
+          'Missing NativeModule. React Native versions 0.60 and up perform auto-linking. Please see https://github.com/react-native-community/cli/blob/master/docs/autolinking.md.',
+        ),
       );
     }
 
