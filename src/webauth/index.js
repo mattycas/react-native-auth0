@@ -127,12 +127,12 @@ export default class WebAuth {
    *
    * @memberof WebAuth
    */
-  clearSession(options = {}) {
+  clearSession(options = {}, useAuthSession = true) {
     const {client, agent, domain, clientId} = this;
     options.clientId = clientId;
     options.returnTo = callbackUri(domain);
     options.federated = options.federated || false;
     const logoutUrl = client.logoutUrl(options);
-    return agent.show(logoutUrl, true);
+    return agent.show(logoutUrl, true, useAuthSession);
   }
 }
