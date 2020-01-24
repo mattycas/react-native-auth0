@@ -9,7 +9,6 @@ import WebAuth from './src/webauth';
  * @class Auth0
  */
 export default class Auth0 {
-
   /**
    * Creates an instance of Auth0.
    * @param {Object} options your Auth0 application information
@@ -18,10 +17,10 @@ export default class Auth0 {
    *
    * @memberof Auth0
    */
-  constructor(options = {}) {
-    const { domain, clientId, ...extras } = options;
+  constructor(options = {}, shareAuthSession = true) {
+    const {domain, clientId, ...extras} = options;
     this.auth = new Auth({baseUrl: domain, clientId, ...extras});
-    this.webAuth = new WebAuth(this.auth);
+    this.webAuth = new WebAuth(this.auth, shareAuthSession);
     this.options = options;
   }
 
@@ -31,7 +30,7 @@ export default class Auth0 {
    * @return {Users}
    */
   users(token) {
-    const { domain, clientId, ...extras } = this.options;
+    const {domain, clientId, ...extras} = this.options;
     return new Users({baseUrl: domain, clientId, ...extras, token});
   }
-};
+}
